@@ -7,6 +7,10 @@ angular.module('App').controller("testSelectionCtrl",["$scope",function($scope){
 	$scope.listTest2 = [{name:"Test1"},{name:"Test2"},{name:"Test3"},{name:"Test4"}];
 
 	$scope.listTest2Selected = [{name:"Test1"}];
+
+	$scope.$watch("listTest1Selected",function(test){
+		console.log($scope.listTest1Selected,"$scope.listTest1Selected in app");
+	},true);
 }]);
 
 angular.module('App').filter('reverse', function() {

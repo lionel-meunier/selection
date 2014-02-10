@@ -31,7 +31,7 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
 
       $scope.$watch("isReady()",function(newVal,oldVal){
         if(newVal === true){
-          initEvent();  
+          init(); 
         } else {
           destroyEvent();
         }
@@ -44,6 +44,7 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
       });
       //get $scope.selectedCollection in scope
       $scope.$watchCollection('selectedCollection',function(collection){
+        console.log("selectedCollection watchCollection",collection);
         initSelectedCollection(collection);
       });
 
@@ -60,6 +61,7 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
       function initSelectedCollection(collection){
         $scope.selectedCollection = collection;
         //$scope.collection is Array
+        console.log($scope.selectedCollection,"$scope.selectedCollection in init");
         if(_.isUndefined($scope.selectedCollection)){
           $scope.selectedCollection = [];
         } else if(!_.isArray($scope.selectedCollection)){
@@ -67,41 +69,74 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
         }
         if(_.size($scope.selectedCollection) > 0){
           //update scope item
-          updateScopeItem();
+          //updateScopeItem();
         }
       }
-
-      function initEvent(){
+      function init() {
+        console.log("init");
         selecteur = $element.next().get(0).nodeName;
-        $element.parent().on("click",selecteur,function(e){
-          var scopeItem = $(this).scope();
-          scopeItem.$apply(function(){
-            if(!_.isBoolean(scopeItem.$selected)){
-              scopeItem.$selected = true;
-            } else {
-              scopeItem.$selected = !scopeItem.$selected;
-            }
-          });
-          //update selectedCollection
-          /*
-          console.log(scopeItem.$selected,"isSelected");
-          if(scopeItem.$selected){
-            $scope.selectedCollection.push($(this).scope().$eval(nameItem));
-          } else {
+        initChildScope();
+        initWatcher();
+        initEvent(); 
 
+      }
+      function initChildScope() {
+        console.log("initChildScope");
+        $element.parent().find(selecteur).each(function(){
+          var scopeChild = $(this).scope();
+          var item = scopeChild.$eval(nameItem);
+          if(_.contains($scope.selectedCollection,item)){
+            scopeChild.$selected = true;
+          } else {
+            scopeChild.$selected = false;
           }
-          */
         });
       }
+      function initEvent(){
+        console.log("initEvent");
+        $element.parent().on("click",selecteur,function(e){
+          var scopeItem = $(this).scope();
+          //unique selected
+          
+
+          scopeItem.$selected = !scopeItem.$selected;
+          scopeItem.$apply(function(){
+            
+          });
+        });
+      }
+      function initWatcher(){
+        console.log("initWatcher");
+       $element.parent().find(selecteur).each(function(){
+          var scopeItem = $(this).scope();
+          scopeItem.$watch("$selected",function(newVal,oldVal){
+            //update selected collection
+            var item = scopeItem.$eval(nameItem);
+            var index = _.indexOf($scope.selectedCollection,item);
+            if(newVal === true){
+              if(index === -1){
+                $scope.selectedCollection.push(item);  
+              }
+            } else {
+              if(index !== -1){
+                $scope.selectedCollection.splice(index,index+1);
+              }
+            }
+            console.log(newVal,oldVal,$scope.selectedCollection);  
+            
+          });
+        }); 
+      }
+
       function destroyEvent(){
         //TODO destroy all Event
       }
 
       function updateScopeItem(){
-        console.log(selecteur,"selecteur define");
         _.each($scope.selectedCollection,function(el){
           if(_.contains($scope.collection,el)){
             //Récupérer le scope de l'enfant et le mettre à
+
           } else {
             //TODO gestion erreur un item de selectedCollection n'existe pas dans la collection
           }
@@ -119,7 +154,7 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
 				$scope.collection = collection;
 			});
 			*/
-
+/*
 			function inSelectedCollection(item){
         console.log($scope.selectedCollection,"selectedCollection");
 				return _.contains($scope.selectedCollection,item);
@@ -136,6 +171,7 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
 				}
 				console.log($scope.selectedCollection,$scope);
 			});
+*/
 		}
 	}
 }]);
