@@ -6,11 +6,15 @@
 	<link rel="stylesheet" href="../css/selection.css">
 </head>
 <body ng-app="App" >
-
+	
 	<main ng-controller="testSelectionCtrl">
+		<input type="text" ng-model="val"/>
+		Val = {{val}}
+		<button ng-click="add(val)">Add in List</button>
+		<button ng-click="addTest(val)">Add in ListSelected</button>
 		<ul>
 			<li ng-repeat="item in listTest1 | reverse" selection="listTest1Selected" ng-class="{'selected':$selected}">
-				{{item}}
+				{{item}} <button ng-click="remove(item)">X</button>
 			</li>
 		</ul>
 		<ul>

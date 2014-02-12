@@ -44,12 +44,12 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
       });
       //get $scope.selectedCollection in scope
       $scope.$watchCollection('selectedCollection',function(collection){
-        console.log("selectedCollection watchCollection",collection);
         initSelectedCollection(collection);
       });
 
       
       function initCollection(collection){
+        console.log(collection,"initCollection");
         $scope.collection = collection;
         //$scope.collection is Array
         if(_.isUndefined($scope.collection)){
@@ -59,9 +59,9 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
         }        
       }
       function initSelectedCollection(collection){
+        console.log(collection,"initSelectedCollection");
         $scope.selectedCollection = collection;
         //$scope.collection is Array
-        console.log($scope.selectedCollection,"$scope.selectedCollection in init");
         if(_.isUndefined($scope.selectedCollection)){
           $scope.selectedCollection = [];
         } else if(!_.isArray($scope.selectedCollection)){
@@ -69,7 +69,14 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
         }
         if(_.size($scope.selectedCollection) > 0){
           //update scope item
-          //updateScopeItem();
+          //Vérifier que les items existe tous
+          _.each($scope.selectedCollection,function(el,ite){
+            if(_.indexOf($scope.collection,el) === -1){
+              console.error("element is not in collection");
+              $scope.selectedCollection.splice(ite,1);
+            }
+          });
+          
         }
       }
       function init() {
@@ -93,12 +100,10 @@ angular.module('Selection').directive("selection", ['$parse',function($parse){
         });
       }
       function initEvent(){
-        console.log("initEvent");
         $element.parent().on("click",selecteur,function(e){
+          console.log("click");
           var scopeItem = $(this).scope();
           //unique selected
-          
-
           scopeItem.$selected = !scopeItem.$selected;
           scopeItem.$apply(function(){
             
