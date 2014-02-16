@@ -1,5 +1,5 @@
 angular.module('Selection', []);
-angular.module('Selection').constants("configuration", {
+angular.module('Selection').constant("configuration", {
   listSelected: {
     strict: true
   },
@@ -27,16 +27,16 @@ angular.module('Selection').directive("selection", ['$parse',
         }
         nameItem = match[1];
         nameCollectionAndFiltre = match[2];
-
-        initEvent();
         
 
         //get $scope.collection in parent
         $scope.$parent.$watchCollection(nameCollectionAndFiltre, function(collection) {
           if (!_.isUndefined(collection) && _.isArray(collection)) {
             //avant mettre à jour le tableau de watch on le kill et on le recrée
+            initSelecteur();
             initWatched();
             $scope.collection = collection;
+            initSelectedCollection();
             initChildScope();
           }
           //initCollection(collection);
@@ -46,13 +46,25 @@ angular.module('Selection').directive("selection", ['$parse',
         $scope.$watchCollection('selectedCollection', function(collection) {
           if (!_.isUndefined(collection) && _.isArray(collection)) {
             $scope.selectedCollection = collection;
+            initSelectedCollection();
             initChildScope();
           }
           //TODO quand la liste est prète ou change mettre à jour les scopes enfants
         });
 
+        function initSelectedCollection(){
+          //Suivant configuration
+          //Si restricte enlever tous les élements non présent dans la collection
+
+          $scope.selectedCollection = _.filter($scope.selectedCollection,function(item){
+            var index = _.indexOf($scope.collection, item);
+            if(index !== -1){
+              return true;
+            }
+          });
+        };
+
         function initWatched() {
-          console.log("initWatched");
           if(_.size(watchedScope) > 0){
             _.each(watchedScope,function(fn){
               fn();
@@ -71,7 +83,7 @@ angular.module('Selection').directive("selection", ['$parse',
                 }
               } else {
                 if (index !== -1) {
-                  $scope.selectedCollection.splice(index, index + 1);
+                  $scope.selectedCollection = _.without($scope.selectedCollection,item);
                 }
               }
             });
@@ -80,50 +92,15 @@ angular.module('Selection').directive("selection", ['$parse',
 
         }
 
-        function initCollection(collection) {
-          console.log(collection, "initCollection");
-          $scope.collection = collection;
-          //$scope.collection is Array
-          if (_.isUndefined($scope.collection)) {
-            $scope.collection = [];
-          } else if (!_.isArray($scope.collection)) {
-            $scope.collection = [];
+        function initSelecteur() {
+          if(_.size($element.next()) !== 0){
+            selecteur = $element.next().get(0).nodeName;  
           }
-        }
-
-        function initSelectedCollection(collection) {
-          console.log(collection, "initSelectedCollection");
-          $scope.selectedCollection = collection;
-          //$scope.collection is Array
-          if (_.isUndefined($scope.selectedCollection)) {
-            $scope.selectedCollection = [];
-          } else if (!_.isArray($scope.selectedCollection)) {
-            $scope.selectedCollection = [];
-          }
-          if (_.size($scope.selectedCollection) > 0) {
-            //update scope item
-            //Vérifier que les items existe tous
-            _.each($scope.selectedCollection, function(el, ite) {
-              if (_.indexOf($scope.collection, el) === -1) {
-                console.error("element is not in collection");
-                $scope.selectedCollection.splice(ite, 1);
-              }
-            });
-
-          }
-        }
-
-        function init() {
-          console.log("init");
-          selecteur = $element.next().get(0).nodeName;
-          initChildScope();
-          initWatcher();
+          destroyEvent();
           initEvent();
-
         }
 
         function initChildScope() {
-          console.log("initChildScope");
           $element.parent().find(selecteur).each(function() {
             var scopeChild = $(this).scope();
             var item = scopeChild.$eval(nameItem);
@@ -136,42 +113,20 @@ angular.module('Selection').directive("selection", ['$parse',
         }
 
         function initEvent() {
-          $element.parent().on("click", selecteur, function(e) {
-            console.log("click");
+          $element.parent().on("click", selecteur,clickEvent);
+        }
+        function clickEvent(e) {
+            //console.log(e);
             var scopeItem = $(this).scope();
             //unique selected
             scopeItem.$selected = !scopeItem.$selected;
             scopeItem.$apply(function() {
 
             });
-          });
         }
-
-        function initWatcher() {
-          console.log("initWatcher");
-          $element.parent().find(selecteur).each(function() {
-            var scopeItem = $(this).scope();
-            scopeItem.$watch("$selected", function(newVal, oldVal) {
-              //update selected collection
-              var item = scopeItem.$eval(nameItem);
-              var index = _.indexOf($scope.selectedCollection, item);
-              if (newVal === true) {
-                if (index === -1) {
-                  $scope.selectedCollection.push(item);
-                }
-              } else {
-                if (index !== -1) {
-                  $scope.selectedCollection.splice(index, index + 1);
-                }
-              }
-              console.log(newVal, oldVal, $scope.selectedCollection);
-
-            });
-          });
-        }
-
         function destroyEvent() {
           //TODO destroy all Event
+          $element.parent().off("click", selecteur,clickEvent);
         }
 
         function updateScopeItem() {
@@ -184,141 +139,8 @@ angular.module('Selection').directive("selection", ['$parse',
             }
           });
         }
-
-        //console.log(NgModelController);
-        //Si on veut récupérer la collection
-        /*
-      
-
-
-      $scope.$parent.$watchCollection(rhs,function(collection){
-        console.log(collection,"change in parent scope");
-        $scope.collection = collection;
-      });
-      */
-        /*
-      function inSelectedCollection(item){
-        console.log($scope.selectedCollection,"selectedCollection");
-        return _.contains($scope.selectedCollection,item);
-      }
-      
-      $element.on("click",function(event){
-        var item = $(this).scope().$eval(nameItem);
-        
-        if(!inSelectedCollection(item)){
-          $scope.$apply(function(){
-            $scope.selectedCollection.splice(0, _.size($scope.selectedCollection));
-            $scope.selectedCollection.push(item);
-          });
-        }
-        console.log($scope.selectedCollection,$scope);
-      });
-*/
       }
     }
   }
 ]);
 
-
-angular.module('Selection').directive('ioMultiSelect', [
-  function() {
-    var ioMultiSelect = {
-      restrict: 'A',
-      scope: true,
-      require: '?ngModel',
-      link: function(scope, element, attrs, ngModel) {
-        if (!ngModel) return; // do nothing if no ng-model
-
-        var opts,
-          attrSelected,
-          subElementSelector,
-          lastIndex = null,
-          indexShiftSave = null;
-
-        scope.$watch(attrs.ioMultiSelect, function(options) {
-          opts = angular.extend({}, options);
-          attrSelected = angular.isString(opts.attrSelected) ? opts.attrSelected : "$selected";
-          subElementSelector = angular.isString(opts.subElementSelector) ? opts.subElementSelector : "li:not(.disabled)";
-          element.off("click", subElementSelector, onClick);
-          element.on("click", subElementSelector, onClick);
-          scope.$emit("init");
-        });
-
-        function onClick(e) {
-          scope.$apply(update(e, this));
-        }
-
-        function update(event, rowElement) {
-          //Déterminer si on purge
-          var row = $(rowElement),
-            index = row.index(),
-            metaKey = event.metaKey || event.ctrlKey,
-            shiftKey = event.shiftKey;
-
-          console.log(rowElement);
-          if (!shiftKey) {
-            indexShiftSave = null;
-          } else if (indexShiftSave === null) {
-            indexShiftSave = lastIndex;
-          }
-
-          if (!(metaKey || shiftKey)) {
-            //Réinitialisation de la liste;
-            _.each(ngModel.$modelValue, function(el) {
-              console.log(el);
-              el[attrSelected] = false;
-            });
-          }
-
-          var selected = ngModel.$modelValue[index][attrSelected];
-          console.log(ngModel.$modelValue[index][attrSelected]);
-          if (!shiftKey) {
-            if (!selected) {
-              updateItem(index, true);
-            } else if (metaKey && selected) {
-              updateItem(index, false);
-            }
-          } else {
-            _.each(ngModel.$modelValue, function(el, ite) {
-              //les limites toujours vrai
-              if (ite === index || ite === indexShiftSave) {
-                updateItem(ite, true);
-              } else {
-                if (
-                  (indexShiftSave > index && ite >= index && ite <= indexShiftSave) ||
-                  (indexShiftSave < index && ite <= index && ite >= indexShiftSave)
-                ) {
-                  updateItem(ite, true);
-                } else {
-                  updateItem(ite, false);
-                }
-              }
-            });
-          }
-
-          lastIndex = index;
-        }
-
-        function updateItem(indexItem, value) {
-          if (itemValide(indexItem)) {
-            ngModel.$modelValue[indexItem][attrSelected] = value;
-            scope.$emit("refresh", indexItem, value);
-          }
-        }
-
-        function itemValide(indexItem) {
-          var itemElement = element.children().get(indexItem);
-          var test = element.find(subElementSelector).filter(itemElement);
-          if (test.length > 0) {
-            return true;
-          } else {
-            return false;
-          }
-        }
-
-
-      }
-    };
-    return ioMultiSelect;
-  }
-]);
