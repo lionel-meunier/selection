@@ -2,22 +2,54 @@ Selection
 =========
 Created by : Lionel Meunier
 
-Angularjs module selection of item with all events as possible.
+Angularjs directive add $selected variable in childscope to ng-repeat.
 
-For computer selection taking into account the shift and ctrl to select multiple items. 
-Selection for mobile with touch start and stop to select multiple items.
+Documentation
+=============
 
-Module in development
-=====================
+Include required librairie [underscore](http://underscorejs.org/).
 
-Cette directive permet de rajouter dans les scopes enfant de ng-repeat une valeur $selected.
-Chaque changement de cette valeur permetra d'ajouter les items du ng-repeat à une liste "listeSelected".
+Inject module into your app.
+```
+angular.module('App', ['lionel-meunier.selection']);
+```
 
-Prérequis :
-Attr : ng-repeat
-Liste selected is Array
-If not empty tous les éléments de la liste "listeSelected" doivent être egals à des éléments de la liste.
+Developers
+==========
 
-A vérifier :
-Les éléments de la listeSelected sont trié dans le même ordre que la liste du ng-repeat avant l'intervention des filtres.
+Using bower for install or clone [repo](https://github.com/lionel-meunier/selection.git).
 
+Using
+=====
+
+Repeat your list and add toggle link.
+
+```
+<ul>
+	<li ng-repeat="item in list" selection="listSelected">
+		<a ng-click="$selected!=$selected">Toggle</a>
+		<span>{{item}}</span>
+	</li>
+</ul>
+```
+
+"listSelected" matches all items in the list that has "$selected" to true.
+
+Filter
+======
+
+The filter "selectedOrdering" to sort the list of selection by keeping the order of the main list.
+
+```
+<ul>
+	<li ng-repeat="item in list" selection="listSelected">
+		<a ng-click="$selected!=$selected">Toggle</a>
+		<span>{{item}}</span>
+	</li>
+</ul>
+<ul>
+	<li ng-repeat="item in listSelected | selectedOrdering : list">
+		{{item}}
+	</li>
+</ul>
+```
