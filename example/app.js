@@ -1,3 +1,5 @@
+angular.module('App', ['lionel-meunier.selection']);
+
 angular.module('App').controller("testSelectionCtrl",["$scope",function($scope){
 
 	$scope.listTest1 = ["Test1","Test2","Test3","Test4"];
@@ -24,11 +26,3 @@ angular.module('App').controller("testSelectionCtrl",["$scope",function($scope){
 		}
 	}
 }]);
-
-angular.module('App').filter('reverse', function() {
-	return function(items) {
-	  if(!_.isUndefined(items)){
-	    return items.slice().reverse();
-	  }
-	};
-});

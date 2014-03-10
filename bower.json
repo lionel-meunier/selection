@@ -5,11 +5,9 @@
     "underscore": "1.5.2",
     "angular": "1.2.10",
     "angular-mocks" : "1.2.10",
-    "angular-scenario" : "1.2.10",
     "jquery":"1.11.0"
   },
   "ignore": [
-    "**/.*",
-    "lib"
+    "**/.*"
   ]
 }

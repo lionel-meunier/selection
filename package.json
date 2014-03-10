@@ -1,0 +1,28 @@
+{
+  "name": "lionel-meunier.selection",
+  "title": "Selection",
+  "description": "add attributes $selected in child scope to ng-repeat",
+  "version": "1.0.0",
+  "main": "src/selection.js",
+  "author": {
+    "name": "Lionel Meunier",
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lionel-meunier/selection.git"
+  },
+  "keywords": [
+    "angularjs",
+    "directive",
+    "selected",
+    "list"
+  ]
+  "dependencies": {
+    "underscore": "1.5.2",
+    "angular": "1.2.10",
+    "jquery":"1.11.0"
+  },
+  "devDependencies": {
+    "angular-mocks" : "1.2.10"
+  }
+}

@@ -1,146 +1,139 @@
-angular.module('Selection', []);
-angular.module('Selection').constant("configuration", {
-  listSelected: {
-    strict: true
-  },
-  mode: 'checkbox'
-});
-angular.module('Selection').directive("selection", ['$parse',
-  function($parse) {
+angular.module('lionel-meunier.selection', []);
+
+angular.module('lionel-meunier.selection').directive("selection", ['$parse', '$log',
+  function($parse, $log) {
+
+    SelectionCtrl.$inject = ['$scope','$element', '$attrs' ];
+    function SelectionCtrl($scope,$element, $attrs){
+      if (hasErrorConf($attrs) === false) {
+          var conf = getConf($attrs);
+          var watchedScope = [];
+          var selecteur = $element.nodeName;
+
+          //Watch collection
+          if (!_.isUndefined(conf.nameCollection)) {
+            $scope.$parent.$watchCollection(conf.nameCollection, function(collection) {
+              if (!_.isUndefined(collection) && _.isArray(collection)) {
+                initSelected(collection);
+                initChildScope();
+              }
+            });
+          }
+          //Watch selectedCollection
+          $scope.$watchCollection('selectedCollection', function(collection) {
+            if (!_.isUndefined(collection) && _.isArray(collection)) {
+              initChildScope();
+            }
+          });
+
+        }
+
+        function initSelected(collection) {
+          $scope.selectedCollection = _.filter($scope.selectedCollection,function(item){
+            if(_.contains(collection,item)) return true;
+          });;
+        }
+
+        
+        function watchSelected(newVal, oldVal, scopeItem) {
+          var item = scopeItem.$eval(conf.nameItem);
+          var index = _.indexOf($scope.selectedCollection, item);
+          var collection = $parse(conf.nameCollection)($scope.$parent);
+          var reelIndex = _.indexOf(collection, item);
+          if (newVal === true) {
+            if (index === -1) {
+              //TODO ajout au bonne endroit
+              $scope.selectedCollection.push(item);
+            }
+          } else {
+            if (index !== -1) {
+              $scope.selectedCollection = _.without($scope.selectedCollection, item);
+            }
+          }
+        }
+
+        function initChildScope() {
+          destroyAllWatch();
+          var curentElement = $element.next();
+          while (isNoComment(curentElement)) {
+            var scopeItem = curentElement.scope();
+            //Initialiser le scope par défaut
+            var item = scopeItem.$eval(conf.nameItem);
+            if (_.contains($scope.selectedCollection, item)) {
+              scopeItem.$selected = true;
+            } else {
+              scopeItem.$selected = false;
+            }
+            //Mettre le watch
+            var scopeItemWatch = scopeItem.$watch("$selected", watchSelected);
+            watchedScope.push(scopeItemWatch);
+            curentElement = curentElement.next();
+          }
+        }
+
+        function destroyAllWatch() {
+          if (_.size(watchedScope) > 0) {
+            _.each(watchedScope, function(fn) {
+              fn();
+            });
+          }
+          watchedScope = [];
+        }
+    }
+
+    function hasErrorConf($attrs) {
+      if (_.isUndefined($attrs.ngRepeat)) {
+        $log.error("$attrs.ngRepeat not defined");
+        return true;
+      } else if(!matchNgRepeat($attrs)) {
+        $log.error("match $attrs.ngRepeat");
+        return true;
+      }
+      return false;
+    }
+
+    function matchNgRepeat($attrs) {
+      return $attrs.ngRepeat.match(/^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?\s*$/);
+    }
+
+    function getConf($attrs) {
+      var conf = {};
+      var match = matchNgRepeat($attrs);
+      conf.nameItem = match[1];
+      conf.nameCollection = match[2];
+      return conf;
+    }
+
+    function isNoComment(element) {
+      //Doit être définie
+      if (_.isUndefined(element.get(0))) {
+        return false;
+      }
+      return true;
+    }
+
     return {
       priority: 1100,
       restrict: 'A',
       scope: {
         selectedCollection: "=selection",
       },
-      link: function($scope, $element, $attr) {
-        var selecteur = $element.nodeName;
-        var expression = $attr.ngRepeat;
-        var match = expression.match(/^\s*([\s\S]+?)\s+in\s+([\s\S]+?)(?:\s+track\s+by\s+([\s\S]+?))?\s*$/),
-          trackByExp, trackByExpGetter, trackByIdExpFn, trackByIdArrayFn, trackByIdObjFn,
-          lhs, rhs, valueIdentifier, keyIdentifier;
-        var watchedScope = [];
-
-        if (!match) {
-          throw ngRepeatMinErr('iexp', "Expected expression in form of '_item_ in _collection_[ track by _id_]' but got '{0}'.",
-            expression);
-        }
-        nameItem = match[1];
-        nameCollectionAndFiltre = match[2];
-        
-
-        //get $scope.collection in parent
-        $scope.$parent.$watchCollection(nameCollectionAndFiltre, function(collection) {
-          if (!_.isUndefined(collection) && _.isArray(collection)) {
-            //avant mettre à jour le tableau de watch on le kill et on le recrée
-            initSelecteur();
-            initWatched();
-            $scope.collection = collection;
-            initSelectedCollection();
-            initChildScope();
-          }
-          //initCollection(collection);
-          //TODO quand la liste est prète ou change mettre à jour les scopes enfants et leur watch
-        });
-        //get $scope.selectedCollection in scope
-        $scope.$watchCollection('selectedCollection', function(collection) {
-          if (!_.isUndefined(collection) && _.isArray(collection)) {
-            $scope.selectedCollection = collection;
-            initSelectedCollection();
-            initChildScope();
-          }
-          //TODO quand la liste est prète ou change mettre à jour les scopes enfants
-        });
-
-        function initSelectedCollection(){
-          //Suivant configuration
-          //Si restricte enlever tous les élements non présent dans la collection
-
-          $scope.selectedCollection = _.filter($scope.selectedCollection,function(item){
-            var index = _.indexOf($scope.collection, item);
-            if(index !== -1){
-              return true;
-            }
-          });
-        };
-
-        function initWatched() {
-          if(_.size(watchedScope) > 0){
-            _.each(watchedScope,function(fn){
-              fn();
-            });
-          }
-          watchedScope = [];
-          $element.parent().find(selecteur).each(function() {
-            var scopeItem = $(this).scope();
-            var scopeItemWatch = scopeItem.$watch("$selected", function(newVal, oldVal) {
-              //update selected collection
-              var item = scopeItem.$eval(nameItem);
-              var index = _.indexOf($scope.selectedCollection, item);
-              if (newVal === true) {
-                if (index === -1) {
-                  $scope.selectedCollection.push(item);
-                }
-              } else {
-                if (index !== -1) {
-                  $scope.selectedCollection = _.without($scope.selectedCollection,item);
-                }
-              }
-            });
-            watchedScope.push(scopeItemWatch);
-          });
-
-        }
-
-        function initSelecteur() {
-          if(_.size($element.next()) !== 0){
-            selecteur = $element.next().get(0).nodeName;  
-          }
-          destroyEvent();
-          initEvent();
-        }
-
-        function initChildScope() {
-          $element.parent().find(selecteur).each(function() {
-            var scopeChild = $(this).scope();
-            var item = scopeChild.$eval(nameItem);
-            if (_.contains($scope.selectedCollection, item)) {
-              scopeChild.$selected = true;
-            } else {
-              scopeChild.$selected = false;
-            }
-          });
-        }
-
-        function initEvent() {
-          $element.parent().on("click", selecteur,clickEvent);
-        }
-        function clickEvent(e) {
-            //console.log(e);
-            var scopeItem = $(this).scope();
-            //unique selected
-            scopeItem.$selected = !scopeItem.$selected;
-            scopeItem.$apply(function() {
-
-            });
-        }
-        function destroyEvent() {
-          //TODO destroy all Event
-          $element.parent().off("click", selecteur,clickEvent);
-        }
-
-        function updateScopeItem() {
-          _.each($scope.selectedCollection, function(el) {
-            if (_.contains($scope.collection, el)) {
-              //Récupérer le scope de l'enfant et le mettre à
-
-            } else {
-              //TODO gestion erreur un item de selectedCollection n'existe pas dans la collection
-            }
-          });
-        }
-      }
+      controller : SelectionCtrl
     }
   }
 ]);
 
+
+angular.module('lionel-meunier.selection').filter('selectedOrdering', ['$parse',function($parse){
+  return function(selectedCollection,collection){
+    var newSelCol = [];
+    _.each(selectedCollection,function(item){
+      if(_.contains(collection,item)){
+        var reelIndex = _.indexOf(collection, item);
+        newSelCol[reelIndex] = item;
+      }
+    });
+    selectedCollection = _.compact(newSelCol);
+    return selectedCollection;
+  };
+}]);
