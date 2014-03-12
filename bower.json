@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "dependencies": {
     "underscore": "1.5.2",
-    "angular": "1.2.10",
-    "angular-mocks" : "1.2.10",
-    "jquery":"1.11.0"
+    "angular": "v1.2.13",
+    "angular-route":"v1.2.13",
+    "jquery":"1.11.0",
+    "bootstrap":"v3.1.1",
+    "angular-bootstrap":"0.10.0",
+    "font-awesome":"v4.0.3"
   },
   "ignore": [
     "**/.*"

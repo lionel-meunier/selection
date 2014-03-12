@@ -4,6 +4,8 @@ Created by : Lionel Meunier
 
 Angularjs directive add $selected variable in childscope to ng-repeat.
 
+[DEMO](http://lionel-meunier.github.io/selection/)
+
 Documentation
 =============
 
